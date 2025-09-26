@@ -11,7 +11,7 @@ import { PostDetail } from "./components/PostDetail";
 import { NotFound } from "./components/NotFound";
 import { Button } from "./components/ui/button";
 import { Input } from "./components/ui/input";
-import { Search, Plus } from "lucide-react";
+import { Search, Plus, ChevronLeft, ChevronRight } from "lucide-react";
 import { supabase } from "./utils/supabase/client";
 import { postsAPI, authAPI } from "./utils/api";
 import { AuthManager, AuthRateLimit } from "./utils/auth";
@@ -34,6 +34,8 @@ export default function App() {
   const [selectedPost, setSelectedPost] = useState<any>(null);
   const [blogPosts, setBlogPosts] = useState<any[]>([]);
   const [filteredPosts, setFilteredPosts] = useState<any[]>([]);
+  const [postsPage, setPostsPage] = useState<number>(1);
+  const POSTS_PER_PAGE = 4;
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [accessToken, setAccessToken] = useState<string>("");
@@ -277,6 +279,8 @@ export default function App() {
     }
 
     setFilteredPosts(filtered);
+    // Reset to first page when filters change
+    setPostsPage(1);
   }, [blogPosts, selectedCategory, searchTerm]);
 
   const handleCategoryFilter = (categoryId: string | null) => {
@@ -479,9 +483,11 @@ export default function App() {
               </div>
             </div>
 
-            {/* Posts Grid */}
+            {/* Posts Grid with pagination */}
             <div className={`grid gap-6 ${isSidebarOpen ? 'grid-cols-1' : 'grid-cols-1 md:grid-cols-2 xl:grid-cols-3'}`}>
-              {filteredPosts.map((post, index) => (
+              {filteredPosts
+                .slice((postsPage - 1) * POSTS_PER_PAGE, postsPage * POSTS_PER_PAGE)
+                .map((post, index) => (
                 <BlogPost 
                   key={post.id || index} 
                   {...post} 
@@ -502,6 +508,90 @@ export default function App() {
                 </div>
               )}
             </div>
+
+            {/* Pagination */}
+            {filteredPosts.length > POSTS_PER_PAGE && (() => {
+              const totalPages = Math.ceil(filteredPosts.length / POSTS_PER_PAGE);
+
+              const getPagesWindow = (current: number, total: number, windowSize: number = 5) => {
+                const pages: number[] = [];
+                let start = Math.max(1, current - Math.floor(windowSize / 2));
+                let end = Math.min(total, start + windowSize - 1);
+                if (end - start + 1 < windowSize) {
+                  start = Math.max(1, end - windowSize + 1);
+                }
+                for (let p = start; p <= end; p++) pages.push(p);
+                return pages;
+              };
+
+              const windowPages = getPagesWindow(postsPage, totalPages, 5);
+
+              return (
+                <div className="p-4">
+                  <div className="flex items-center justify-between">
+                    {/* Prev */}
+                    <button
+                      className={`flex items-center gap-2 text-sm px-2 py-1 rounded-md transition ${postsPage===1 ? 'opacity-40 cursor-not-allowed' : 'hover:bg-accent'}`}
+                      disabled={postsPage === 1}
+                      onClick={() => { setPostsPage(prev => Math.max(1, prev - 1)); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                      <span>Previous</span>
+                    </button>
+
+                    {/* Numbers */}
+                    <div className="flex items-center gap-4">
+                      {windowPages[0] > 1 && (
+                        <>
+                          <button
+                            className={`text-sm px-1 pb-1 transition ${1===postsPage ? 'text-primary border-b-2 border-primary font-semibold' : 'text-muted-foreground hover:text-primary/80'}`}
+                            aria-current={postsPage===1 ? 'page' : undefined}
+                            onClick={() => { setPostsPage(1); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                          >
+                            1
+                          </button>
+                          <span className="text-muted-foreground">…</span>
+                        </>
+                      )}
+
+                      {windowPages.map((pageNum) => (
+                        <button
+                          key={pageNum}
+                          className={`text-sm px-1 pb-1 transition ${pageNum===postsPage ? 'text-primary border-b-2 border-primary font-semibold' : 'text-muted-foreground hover:text-primary/80'}`}
+                          aria-current={postsPage===pageNum ? 'page' : undefined}
+                          onClick={() => { setPostsPage(pageNum); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                        >
+                          {pageNum}
+                        </button>
+                      ))}
+
+                      {windowPages[windowPages.length - 1] < totalPages && (
+                        <>
+                          <span className="text-muted-foreground">…</span>
+                          <button
+                            className={`text-sm px-1 pb-1 transition ${totalPages===postsPage ? 'text-primary border-b-2 border-primary font-semibold' : 'text-muted-foreground hover:text-primary/80'}`}
+                            aria-current={postsPage===totalPages ? 'page' : undefined}
+                            onClick={() => { setPostsPage(totalPages); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                          >
+                            {totalPages}
+                          </button>
+                        </>
+                      )}
+                    </div>
+
+                    {/* Next */}
+                    <button
+                      className={`flex items-center gap-2 text-sm px-2 py-1 rounded-md transition ${postsPage===totalPages ? 'opacity-40 cursor-not-allowed' : 'hover:bg-accent'}`}
+                      disabled={postsPage === totalPages}
+                      onClick={() => { setPostsPage(prev => Math.min(totalPages, prev + 1)); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                    >
+                      <span>Next</span>
+                      <ChevronRight className="h-4 w-4" />
+                    </button>
+                  </div>
+                </div>
+              );
+            })()}
           </div>
         );
     }
