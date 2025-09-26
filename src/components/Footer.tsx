@@ -1,12 +1,6 @@
 import React from "react";
-import { Github, Mail, Linkedin, Twitter, Settings, LogOut } from "lucide-react";
+import { Github, Mail, Linkedin, Twitter, LogOut } from "lucide-react";
 import { Button } from "./ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "./ui/dropdown-menu";
 
 interface FooterProps {
   isAdmin: boolean;
@@ -45,25 +39,10 @@ export function Footer({ isAdmin, onLoginClick, onLogout, onPasswordReset }: Foo
             {/* Admin Section */}
             <div className="flex items-center space-x-2">
               {isAdmin ? (
-                <>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger>
-                      <Button variant="ghost" size="sm" className="text-xs">
-                        <Settings className="h-3 w-3 mr-1" />
-                        Settings
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={handlePasswordReset} className="text-xs">
-                        Reset Password
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={handleLogout} className="text-xs">
-                        <LogOut className="h-3 w-3 mr-2" />
-                        Logout
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </>
+                <Button variant="outline" size="sm" onClick={handleLogout} className="text-xs flex items-center">
+                  <LogOut className="h-3 w-3 mr-1" />
+                  Logout
+                </Button>
               ) : (
                 <Button variant="outline" size="sm" onClick={handleLoginClick} className="text-xs">
                   Admin

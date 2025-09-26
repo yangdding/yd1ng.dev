@@ -5,6 +5,7 @@ import { Badge } from "./ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import { categoriesAPI } from "../utils/api";
 import { useState, useEffect } from "react";
+import { useIsMobile } from "./ui/use-mobile";
 
 interface SidebarProps {
   onCategoryClick?: (categoryId: string | null) => void;
@@ -16,6 +17,7 @@ interface SidebarProps {
 }
 
 export function Sidebar({ onCategoryClick, selectedCategory, posts = [], onTagClick, onPageChange, currentPage }: SidebarProps) {
+  const isMobile = useIsMobile();
   const [categories, setCategories] = useState<any[]>([]);
   const [postCounts, setPostCounts] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
@@ -134,7 +136,8 @@ export function Sidebar({ onCategoryClick, selectedCategory, posts = [], onTagCl
         </Card>
       </div>
 
-      {/* Profile Card */}
+      {/* Profile Card (conditionally rendered) */}
+      {!isMobile && (
       <Card>
         <CardHeader className="text-center">
           <Avatar className="w-20 h-20 mx-auto mb-4">
@@ -167,8 +170,10 @@ export function Sidebar({ onCategoryClick, selectedCategory, posts = [], onTagCl
           </div>
         </CardContent>
       </Card>
+      )}
 
-      {/* Categories */}
+      {/* Categories (conditionally rendered) */}
+      {!isMobile && (
       <Card>
         <CardHeader>
           <CardTitle>Categories</CardTitle>
@@ -215,9 +220,10 @@ export function Sidebar({ onCategoryClick, selectedCategory, posts = [], onTagCl
           </div>
         </CardContent>
       </Card>
+      )}
 
-      {/* Popular Tags */}
-      {popularTags.length > 0 && (
+      {/* Popular Tags (conditionally rendered) */}
+      {popularTags.length > 0 && !isMobile && (
         <Card>
           <CardHeader>
             <CardTitle>Popular Tags</CardTitle>
