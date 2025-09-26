@@ -12,6 +12,7 @@ import { NotFound } from "./components/NotFound";
 import { Button } from "./components/ui/button";
 import { Input } from "./components/ui/input";
 import { Search, Plus, ChevronLeft, ChevronRight } from "lucide-react";
+import { useIsMobile } from "./components/ui/use-mobile";
 import { supabase } from "./utils/supabase/client";
 import { postsAPI, authAPI } from "./utils/api";
 import { AuthManager, AuthRateLimit } from "./utils/auth";
@@ -35,7 +36,8 @@ export default function App() {
   const [blogPosts, setBlogPosts] = useState<any[]>([]);
   const [filteredPosts, setFilteredPosts] = useState<any[]>([]);
   const [postsPage, setPostsPage] = useState<number>(1);
-  const POSTS_PER_PAGE = 4;
+  const isMobile = useIsMobile();
+  const POSTS_PER_PAGE = isMobile ? 3 : 4;
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [accessToken, setAccessToken] = useState<string>("");
@@ -51,6 +53,13 @@ export default function App() {
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(true);
   const [authenticatedPosts, setAuthenticatedPosts] = useState<Set<string>>(new Set());
   const [showNotFound, setShowNotFound] = useState<boolean>(false);
+
+  // Derive comparable timestamp from various possible date fields
+  const getPostTimestamp = (post: any): number => {
+    const raw = post?.published_at || post?.created_at || post?.updated_at || post?.date;
+    const ts = raw ? new Date(raw).getTime() : 0;
+    return Number.isFinite(ts) ? ts : 0;
+  };
 
   // No default posts - use empty array
   const defaultPosts: any[] = [];
@@ -242,9 +251,11 @@ export default function App() {
       
       const postsPromise = isAdmin ? postsAPI.getAllAdmin() : postsAPI.getAll();
       
-      const posts = await Promise.race([postsPromise, timeoutPromise]);
+      let posts = await Promise.race([postsPromise, timeoutPromise]);
       
       if (posts && Array.isArray(posts) && posts.length > 0) {
+        // Sort newest first
+        posts = [...posts].sort((a, b) => getPostTimestamp(b) - getPostTimestamp(a));
         setBlogPosts(posts);
         setFilteredPosts(posts);
         
@@ -278,10 +289,17 @@ export default function App() {
       );
     }
 
+    // Always sort by date desc when (re)computing
+    filtered = [...filtered].sort((a, b) => getPostTimestamp(b) - getPostTimestamp(a));
     setFilteredPosts(filtered);
     // Reset to first page when filters change
     setPostsPage(1);
   }, [blogPosts, selectedCategory, searchTerm]);
+
+  // Reset page when layout (mobile/desktop) changes
+  useEffect(() => {
+    setPostsPage(1);
+  }, [isMobile]);
 
   const handleCategoryFilter = (categoryId: string | null) => {
     setSelectedCategory(categoryId);
