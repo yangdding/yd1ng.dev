@@ -1,12 +1,42 @@
 {
   "buildCommand": "npm run build",
-  "outputDirectory": "build",
+  "outputDirectory": "dist",
   "framework": "vite",
   "installCommand": "npm install",
+  "redirects": [
+    { "source": "/tags", "destination": "/posts", "permanent": true },
+    { "source": "/tags/:any*", "destination": "/posts", "permanent": true },
+
+    { "source": "/N27", "destination": "/posts", "permanent": true },
+    { "source": "/N27/", "destination": "/posts", "permanent": true },
+    { "source": "/N31", "destination": "/posts", "permanent": true },
+    { "source": "/N31/", "destination": "/posts", "permanent": true },
+    { "source": "/N32", "destination": "/posts", "permanent": true },
+    { "source": "/N32/", "destination": "/posts", "permanent": true },
+
+    { "source": "/N:slug(.*)", "destination": "/posts", "permanent": true }
+  ],
   "rewrites": [
+    { "source": "/(post|about|posts|editor)(.*)", "destination": "/index.html" },
+    { "source": "/(.*)", "destination": "/index.html" }
+  ],
+  "headers": [
     {
       "source": "/(.*)",
-      "destination": "/index.html"
+      "headers": [
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "X-Frame-Options",
+          "value": "DENY"
+        },
+        {
+          "key": "X-XSS-Protection",
+          "value": "1; mode=block"
+        }
+      ]
     }
   ]
 }

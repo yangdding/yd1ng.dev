@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Textarea } from "./ui/textarea";
@@ -6,9 +6,11 @@ import { Label } from "./ui/label";
 import { Badge } from "./ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import { Checkbox } from "./ui/checkbox";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
 import { ArrowLeft, Plus, X, Upload, Eye, Lock, Unlock } from "lucide-react";
 import { categoriesAPI } from "../utils/api";
+import { sanitizeHtml, createSafeMarkdownHtml } from "../utils/xss-protection";
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 interface Post {
   id?: string;
@@ -35,7 +37,7 @@ export function PostEditor({ post, onSave, onCancel }: PostEditorProps) {
     title: post?.title || "",
     excerpt: post?.excerpt || "",
     content: post?.content || "",
-    category_id: post?.category_id || null,
+    category_id: post?.category_id || undefined,
     tags: post?.tags || [],
     featured: post?.featured || false,
     published: post?.published ?? true,
@@ -47,7 +49,6 @@ export function PostEditor({ post, onSave, onCancel }: PostEditorProps) {
 
   const [newTag, setNewTag] = useState("");
   const [categories, setCategories] = useState<any[]>([]);
-  const [activeTab, setActiveTab] = useState("write");
   const [isPreview, setIsPreview] = useState(false);
   const [isPasswordProtected, setIsPasswordProtected] = useState(!!post?.password);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -63,7 +64,7 @@ export function PostEditor({ post, onSave, onCancel }: PostEditorProps) {
         title: post.title || "",
         excerpt: post.excerpt || "",
         content: post.content || "",
-        category_id: post.category_id || null,
+        category_id: post.category_id || undefined,
         tags: post.tags || [],
         featured: post.featured || false,
         published: post.published ?? true,
@@ -79,7 +80,7 @@ export function PostEditor({ post, onSave, onCancel }: PostEditorProps) {
         title: "",
         excerpt: "",
         content: "",
-        category_id: null,
+        category_id: undefined,
         tags: [],
         featured: false,
         published: true,
@@ -179,17 +180,126 @@ export function PostEditor({ post, onSave, onCancel }: PostEditorProps) {
   };
 
   const renderMarkdownPreview = (content: string) => {
-    // Simple markdown rendering (in production, use a proper markdown library)
-    return content
-      .replace(/^### (.*$)/gim, '<h3>$1</h3>')
-      .replace(/^## (.*$)/gim, '<h2>$1</h2>')
-      .replace(/^# (.*$)/gim, '<h1>$1</h1>')
-      .replace(/\*\*(.*)\*\*/gim, '<strong>$1</strong>')
-      .replace(/\*(.*)\*/gim, '<em>$1</em>')
-      .replace(/`(.*)`/gim, '<code>$1</code>')
-      .replace(/!\[([^\]]*)\]\(([^)]*)\)/gim, '<img src="$2" alt="$1" style="max-width: 100%; height: auto;" />')
-      .replace(/\[([^\]]*)\]\(([^)]*)\)/gim, '<a href="$2" target="_blank">$1</a>')
-      .replace(/\n/gim, '<br />');
+    if (!content) return '';
+    
+    return (
+      <ReactMarkdown
+        remarkPlugins={[remarkGfm]}
+        components={{
+          h1: ({ children }) => (
+            <h1 className="text-3xl font-bold mt-8 mb-4 first:mt-0 text-foreground">
+              {children}
+            </h1>
+          ),
+          h2: ({ children }) => (
+            <h2 className="text-2xl font-bold mt-6 mb-3 text-foreground">
+              {children}
+            </h2>
+          ),
+          h3: ({ children }) => (
+            <h3 className="text-xl font-bold mt-4 mb-2 text-foreground">
+              {children}
+            </h3>
+          ),
+          p: ({ children }) => (
+            <p className="mb-4 text-foreground leading-relaxed">
+              {children}
+            </p>
+          ),
+          ul: ({ children }) => (
+            <ul className="mb-4 ml-6 list-disc text-foreground">
+              {children}
+            </ul>
+          ),
+          ol: ({ children }) => (
+            <ol className="mb-4 ml-6 list-decimal text-foreground">
+              {children}
+            </ol>
+          ),
+          li: ({ children }) => (
+            <li className="mb-1 text-foreground">
+              {children}
+            </li>
+          ),
+          blockquote: ({ children }) => (
+            <blockquote className="border-l-4 border-primary pl-4 my-4 italic text-muted-foreground">
+              {children}
+            </blockquote>
+          ),
+          code: ({ children, className }) => {
+            const isInline = !className;
+            if (isInline) {
+              return (
+                <code className="bg-muted px-1 py-0.5 rounded text-sm font-mono">
+                  {children}
+                </code>
+              );
+            }
+            return (
+              <code className={`block bg-muted p-4 rounded-lg overflow-x-auto text-sm font-mono ${className}`}>
+                {children}
+              </code>
+            );
+          },
+          pre: ({ children }) => (
+            <pre className="bg-muted p-4 rounded-lg overflow-x-auto mb-4">
+              {children}
+            </pre>
+          ),
+          a: ({ href, children }) => (
+            <a 
+              href={href} 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="text-primary hover:underline"
+            >
+              {children}
+            </a>
+          ),
+          img: ({ src, alt }) => (
+            <img 
+              src={src} 
+              alt={alt} 
+              className="max-w-full h-auto rounded-lg my-4"
+            />
+          ),
+          table: ({ children }) => (
+            <div className="overflow-x-auto my-4">
+              <table className="min-w-full border-collapse border border-border">
+                {children}
+              </table>
+            </div>
+          ),
+          thead: ({ children }) => (
+            <thead className="bg-muted">
+              {children}
+            </thead>
+          ),
+          tbody: ({ children }) => (
+            <tbody>
+              {children}
+            </tbody>
+          ),
+          tr: ({ children }) => (
+            <tr className="border-b border-border">
+              {children}
+            </tr>
+          ),
+          th: ({ children }) => (
+            <th className="border border-border px-4 py-2 text-left font-semibold">
+              {children}
+            </th>
+          ),
+          td: ({ children }) => (
+            <td className="border border-border px-4 py-2">
+              {children}
+            </td>
+          ),
+        }}
+      >
+        {content}
+      </ReactMarkdown>
+    );
   };
 
   return (
@@ -429,78 +539,54 @@ export function PostEditor({ post, onSave, onCancel }: PostEditorProps) {
                   </div>
                 </div>
 
-                <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                  <TabsList className="grid w-full grid-cols-3">
-                    <TabsTrigger value="write">Write</TabsTrigger>
-                    <TabsTrigger value="preview">Preview</TabsTrigger>
-                    <TabsTrigger value="split">Split</TabsTrigger>
-                  </TabsList>
-                  
-                  <TabsContent value="write" className="mt-4">
-                    <div className="space-y-4">
-                      <div className="flex flex-wrap gap-2">
-                        <Button type="button" variant="outline" size="sm" onClick={() => insertMarkdown('**', '**')}>
-                          Bold
-                        </Button>
-                        <Button type="button" variant="outline" size="sm" onClick={() => insertMarkdown('*', '*')}>
-                          Italic
-                        </Button>
-                        <Button type="button" variant="outline" size="sm" onClick={() => insertMarkdown('`', '`')}>
-                          Code
-                        </Button>
-                        <Button type="button" variant="outline" size="sm" onClick={() => insertMarkdown('### ')}>
-                          H3
-                        </Button>
-                        <Button type="button" variant="outline" size="sm" onClick={() => insertMarkdown('## ')}>
-                          H2
-                        </Button>
-                        <Button type="button" variant="outline" size="sm" onClick={() => insertMarkdown('# ')}>
-                          H1
-                        </Button>
-                      </div>
-                      <Textarea
-                        name="content"
-                        value={formData.content}
-                        onChange={(e) => setFormData(prev => ({ ...prev, content: e.target.value }))}
-                        placeholder="Write your post content here... (Markdown supported)"
-                        className="min-h-[500px] font-mono text-sm"
-                      />
-                    </div>
-                  </TabsContent>
-                  
-                  <TabsContent value="preview" className="mt-4">
-                    <div className="min-h-[500px] p-4 border rounded-md bg-muted/20">
-                      <div 
-                        className="prose prose-sm max-w-none"
-                        dangerouslySetInnerHTML={{ __html: renderMarkdownPreview(formData.content || '') }}
-                      />
-                    </div>
-                  </TabsContent>
-                  
-                  <TabsContent value="split" className="mt-4">
+                <div className="w-full">
+                  <div className="mt-4">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
                         <Label className="text-sm font-medium mb-2 block">Editor</Label>
-                        <Textarea
-                          name="content"
-                          value={formData.content}
-                          onChange={(e) => setFormData(prev => ({ ...prev, content: e.target.value }))}
-                          placeholder="Write your post content here..."
-                          className="min-h-[500px] font-mono text-sm"
-                        />
+                        <div className="min-h-[500px] p-4 border rounded-md bg-muted/20">
+                          <div className="space-y-2">
+                            <div className="flex flex-wrap gap-2 mb-4">
+                              <Button type="button" variant="outline" size="sm" onClick={() => insertMarkdown('**', '**')}>
+                                Bold
+                              </Button>
+                              <Button type="button" variant="outline" size="sm" onClick={() => insertMarkdown('*', '*')}>
+                                Italic
+                              </Button>
+                              <Button type="button" variant="outline" size="sm" onClick={() => insertMarkdown('`', '`')}>
+                                Code
+                              </Button>
+                              <Button type="button" variant="outline" size="sm" onClick={() => insertMarkdown('### ')}>
+                                H3
+                              </Button>
+                              <Button type="button" variant="outline" size="sm" onClick={() => insertMarkdown('## ')}>
+                                H2
+                              </Button>
+                              <Button type="button" variant="outline" size="sm" onClick={() => insertMarkdown('# ')}>
+                                H1
+                              </Button>
+                            </div>
+                            <Textarea
+                              name="content"
+                              value={formData.content}
+                              onChange={(e) => setFormData(prev => ({ ...prev, content: e.target.value }))}
+                              placeholder="Write your post content here... (Markdown supported)"
+                              className="min-h-[450px] font-mono text-sm border-0 bg-transparent resize-none focus:ring-0 focus:outline-none"
+                            />
+                          </div>
+                        </div>
                       </div>
                       <div>
                         <Label className="text-sm font-medium mb-2 block">Preview</Label>
                         <div className="min-h-[500px] p-4 border rounded-md bg-muted/20 overflow-auto">
-                          <div 
-                            className="prose prose-sm max-w-none"
-                            dangerouslySetInnerHTML={{ __html: renderMarkdownPreview(formData.content || '') }}
-                          />
+                          <div className="prose prose-sm max-w-none">
+                            {renderMarkdownPreview(formData.content || '')}
+                          </div>
                         </div>
                       </div>
                     </div>
-                  </TabsContent>
-                </Tabs>
+                  </div>
+                </div>
               </div>
 
               {/* SEO */}

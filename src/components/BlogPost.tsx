@@ -1,10 +1,11 @@
+import React, { useState } from "react";
 import { Calendar, Share2, Edit, Trash2, Lock } from "lucide-react";
 import { Card, CardContent, CardHeader } from "./ui/card";
 import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
-import { useState } from "react";
+import { sanitizeHtml, createSafeMarkdownHtml } from "../utils/xss-protection";
 
 interface BlogPostProps {
   id?: string;
@@ -21,6 +22,7 @@ interface BlogPostProps {
   onEdit?: () => void;
   onDelete?: () => void;
   onRead?: () => void;
+  onAuthenticated?: (postId: string) => void;
 }
 
 export function BlogPost({ 
@@ -37,7 +39,8 @@ export function BlogPost({
   isAdmin = false,
   onEdit,
   onDelete,
-  onRead
+  onRead,
+  onAuthenticated
 }: BlogPostProps) {
   const [isSharing, setIsSharing] = useState(false);
   const [passwordInput, setPasswordInput] = useState("");
@@ -83,9 +86,9 @@ export function BlogPost({
       return "🔒 비밀글입니다.";
     }
     
-    // excerpt가 있으면 사용
+    // excerpt가 있으면 사용 (sanitize 적용)
     if (excerpt && excerpt.trim()) {
-      return excerpt;
+      return sanitizeHtml(excerpt);
     }
     
     // content가 있으면 첫 150자만 표시
@@ -113,6 +116,7 @@ export function BlogPost({
       setShowPasswordDialog(false);
       setPasswordInput("");
       setPasswordError("");
+      onAuthenticated?.(id || "");
       onRead?.();
     } else {
       setPasswordError("Incorrect password");
@@ -168,8 +172,8 @@ export function BlogPost({
               <h2 
                 className="text-xl font-mono group-hover:text-primary transition-colors cursor-pointer"
                 onClick={handlePostClick}
+                dangerouslySetInnerHTML={{ __html: sanitizeHtml(title) }}
               >
-                {title}
               </h2>
               {password && !isAdmin && (
                 <Lock className="h-4 w-4 text-muted-foreground" />
@@ -233,9 +237,6 @@ export function BlogPost({
                 </Button>
               </>
             )}
-            <Button variant="outline" size="sm" onClick={handlePostClick}>
-              Read More
-            </Button>
           </div>
         </div>
       </CardContent>

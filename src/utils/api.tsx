@@ -1,4 +1,5 @@
 import { supabase } from './supabase/client';
+import { APIRateLimiter } from './rate-limiter';
 import { rateLimiter, validateFormData, schemas } from './security';
 
 // Auth API
@@ -175,7 +176,7 @@ export const postsAPI = {
   },
 
   async incrementViews(id: string) {
-    const { error } = await supabase.rpc('increment_post_views', { post_id: id });
+    const { error } = await supabase.rpc('increment_post_views', { p_post_id: id });
     if (error) throw error;
     return true;
   },

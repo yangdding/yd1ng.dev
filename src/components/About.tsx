@@ -144,7 +144,7 @@ export function About() {
               </div>
               <div className="flex items-start space-x-2">
                 <span className="text-muted-foreground">•</span>
-                <span>2025.09 Knock On 6기</span>
+                <span>2025.09 Knock On 6기 Certificate</span>
               </div>
               <div className="flex items-start space-x-2">
                 <span className="text-muted-foreground">•</span>
@@ -196,58 +196,103 @@ export function About() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-           <div className="space-y-4">
-             <div className="p-4 border rounded-lg space-y-2">
-               <div className="flex items-center justify-between">
-                 <h4 className="font-mono text-sm font-semibold">Blog Platform</h4>
-                 <span className="text-xs text-muted-foreground">2025.09~</span>
-               </div>
-               <p className="text-sm text-muted-foreground">
-                 Full-stack blog platform built with React, TypeScript, and Supabase. 
-                 Features include admin authentication, post management, and password protection.
-               </p>
-               <div className="flex flex-wrap gap-2 mt-2">
-                 <Badge variant="outline" className="text-xs">React</Badge>
-                 <Badge variant="outline" className="text-xs">TypeScript</Badge>
-                 <Badge variant="outline" className="text-xs">Supabase</Badge>
-                 <Badge variant="outline" className="text-xs">Tailwind CSS</Badge>
-               </div>
-             </div>
-             
-             <div className="p-4 border rounded-lg space-y-2">
-               <div className="flex items-center justify-between">
-                 <h4 className="font-mono text-sm font-semibold">Goal Memo</h4>
-                 <span className="text-xs text-muted-foreground">2025.09~</span>
-               </div>
-               <p className="text-sm text-muted-foreground">
-                 Goal tracking and memo application for personal productivity. 
-                 Features include goal setting, progress tracking, and memo management with real-time updates.
-               </p>
-               <div className="flex flex-wrap gap-2 mt-2">
-                 <Badge variant="outline" className="text-xs">JavaScript</Badge>
-                 <Badge variant="outline" className="text-xs">React</Badge>
-                 <Badge variant="outline" className="text-xs">Supabase</Badge>
-                 <Badge variant="outline" className="text-xs">Tailwind CSS</Badge>
-               </div>
-             </div>
-             
-             <div className="p-4 border rounded-lg space-y-2">
-               <div className="flex items-center justify-between">
-                 <h4 className="font-mono text-sm font-semibold">LLM Project</h4>
-                 <span className="text-xs text-muted-foreground">2025.04~</span>
-               </div>
-               <p className="text-sm text-muted-foreground">
-                 AI-powered zero-day vulnerability discovery system using Large Language Models. 
-                 Automates security research and vulnerability detection through advanced AI analysis.
-               </p>
-               <div className="flex flex-wrap gap-2 mt-2">
-                 <Badge variant="outline" className="text-xs">Python</Badge>
-                 <Badge variant="outline" className="text-xs">LLM</Badge>
-                 <Badge variant="outline" className="text-xs">AI/ML</Badge>
-                 <Badge variant="outline" className="text-xs">Zero-day Research</Badge>
-               </div>
-             </div>
-          </div>
+          <div className="space-y-4">
+            {/* 2025.09 ~ */}
+            <div className="p-4 border rounded-lg space-y-2">
+              <div className="flex items-center justify-between">
+                <h4 className="font-mono text-sm font-semibold">CURT 2nd - TBA</h4>
+                <span className="text-xs text-muted-foreground">2025.09~</span>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Second project from Korea University CURT program. Details to be announced.
+              </p>
+              <div className="flex flex-wrap gap-2 mt-2">
+                <Badge variant="outline" className="text-xs">TBA</Badge>
+              </div>
+            </div>
+
+            <div className="p-4 border rounded-lg space-y-2">
+              <div className="flex items-center justify-between">
+                <h4 className="font-mono text-sm font-semibold">Blog Platform</h4>
+                <span className="text-xs text-muted-foreground">2025.09~</span>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Full-stack blog platform built with React, TypeScript, and Supabase. 
+                Features include admin authentication, post management, and password protection.
+              </p>
+              <div className="flex flex-wrap gap-2 mt-2">
+                <Badge variant="outline" className="text-xs">React</Badge>
+                <Badge variant="outline" className="text-xs">TypeScript</Badge>
+                <Badge variant="outline" className="text-xs">Supabase</Badge>
+                <Badge variant="outline" className="text-xs">Tailwind CSS</Badge>
+              </div>
+            </div>
+
+            <div className="p-4 border rounded-lg space-y-2">
+              <div className="flex items-center justify-between">
+                <h4 className="font-mono text-sm font-semibold">Goal Memo</h4>
+                <span className="text-xs text-muted-foreground">2025.09~09</span>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Goal tracking and memo application for personal productivity. 
+                Features include goal setting, progress tracking, and memo management with real-time updates.
+              </p>
+              <div className="flex flex-wrap gap-2 mt-2">
+                <Badge variant="outline" className="text-xs">JavaScript</Badge>
+                <Badge variant="outline" className="text-xs">React</Badge>
+                <Badge variant="outline" className="text-xs">Supabase</Badge>
+                <Badge variant="outline" className="text-xs">Tailwind CSS</Badge>
+              </div>
+            </div>
+
+            {/* 2025.04 ~ */}
+            <div className="p-4 border rounded-lg space-y-2">
+              <div className="flex items-center justify-between">
+                <h4 className="font-mono text-sm font-semibold">LLM Project</h4>
+                <span className="text-xs text-muted-foreground">2025.04~</span>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                AI-powered zero-day vulnerability discovery system using Large Language Models. 
+                Automates security research and vulnerability detection through advanced AI analysis.
+              </p>
+              <div className="flex flex-wrap gap-2 mt-2">
+                <Badge variant="outline" className="text-xs">Python</Badge>
+                <Badge variant="outline" className="text-xs">LLM</Badge>
+                <Badge variant="outline" className="text-xs">AI/ML</Badge>
+                <Badge variant="outline" className="text-xs">Zero-day Research</Badge>
+              </div>
+            </div>
+
+            {/* CURT 1st - 맨 밑으로 이동 */}
+            <div className="p-4 border rounded-lg space-y-2">
+              <div className="flex items-center justify-between">
+                <h4 className="font-mono text-sm font-semibold">CURT 1st - Malicious URL Detection</h4>
+                <span className="text-xs text-muted-foreground">2025.04~07</span>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Deep learning-based malicious URL analysis system developed as part of Korea University CURT program. 
+                Uses feature-based machine learning and ensemble techniques to classify URLs as malicious or benign.
+              </p>
+              <div className="flex flex-wrap gap-2 mt-2">
+                <Badge variant="outline" className="text-xs">Python</Badge>
+                <Badge variant="outline" className="text-xs">XGBoost</Badge>
+                <Badge variant="outline" className="text-xs">Scikit-learn</Badge>
+                <Badge variant="outline" className="text-xs">Flask</Badge>
+                <Badge variant="outline" className="text-xs">Machine Learning</Badge>
+              </div>
+              <div className="flex items-center space-x-2 mt-3">
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => window.open('https://github.com/yangdding/KoreaUniv_CURT_malicious_url_analysis', '_blank')}
+                  className="flex items-center space-x-1"
+                >
+                  <ExternalLink className="h-3 w-3" />
+                  <span>GitHub</span>
+                </Button>
+              </div>
+            </div>
+         </div>
         </CardContent>
       </Card>
 

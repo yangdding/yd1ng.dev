@@ -1,8 +1,9 @@
+import React from "react";
 import { Shield, Code, Bug, Database, Server, FileText } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Badge } from "./ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
-import { categoriesAPI, postsAPI } from "../utils/api";
+import { categoriesAPI } from "../utils/api";
 import { useState, useEffect } from "react";
 
 interface SidebarProps {
@@ -10,34 +11,51 @@ interface SidebarProps {
   selectedCategory?: string | null;
   posts?: any[];
   onTagClick?: (tag: string) => void;
+  onPageChange?: (page: string) => void;
+  currentPage?: string;
 }
 
-export function Sidebar({ onCategoryClick, selectedCategory, posts = [], onTagClick }: SidebarProps) {
+export function Sidebar({ onCategoryClick, selectedCategory, posts = [], onTagClick, onPageChange, currentPage }: SidebarProps) {
   const [categories, setCategories] = useState<any[]>([]);
   const [postCounts, setPostCounts] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
+
+  // Profile image - using favicon from public folder
+  const profileImgUrl = "/favicon-96x96.png";
 
   useEffect(() => {
     loadCategories();
   }, []);
 
+  // Recompute post counts whenever posts change
+  useEffect(() => {
+    const counts: Record<string, number> = {};
+    posts?.forEach((post: any) => {
+      if (post?.category_id) {
+        counts[post.category_id] = (counts[post.category_id] || 0) + 1;
+      }
+    });
+    setPostCounts(counts);
+  }, [posts]);
+
   const loadCategories = async () => {
     try {
-      const [categoriesData, postsData] = await Promise.all([
-        categoriesAPI.getAll(),
-        postsAPI.getAll()
-      ]);
-
-      setCategories(categoriesData || []);
-
-      // Count posts per category
-      const counts: Record<string, number> = {};
-      postsData?.forEach((post: any) => {
-        if (post.category_id) {
-          counts[post.category_id] = (counts[post.category_id] || 0) + 1;
-        }
-      });
-      setPostCounts(counts);
+      const categoriesData = await categoriesAPI.getAll();
+      if (categoriesData && categoriesData.length > 0) {
+        setCategories(categoriesData);
+      } else {
+        // Derive categories from posts if DB has none
+        const derived: Record<string, { id: string; name: string; icon: string }> = {};
+        posts?.forEach((post: any) => {
+          if (post?.category_id) {
+            const cid = String(post.category_id);
+            if (!derived[cid]) {
+              derived[cid] = { id: cid, name: cid, icon: "FileText" };
+            }
+          }
+        });
+        setCategories(Object.values(derived));
+      }
     } catch (error) {
       console.error('Error loading categories:', error);
       // Fallback categories
@@ -88,12 +106,40 @@ export function Sidebar({ onCategoryClick, selectedCategory, posts = [], onTagCl
 
   return (
     <aside className="space-y-6 sticky top-8">
+      {/* Mobile Navigation - Only visible on mobile */}
+      <div className="block md:hidden">
+        <Card>
+          <CardContent className="p-4">
+            <div className="space-y-2">
+              <div 
+                className={`flex items-center space-x-2 p-2 rounded-lg hover:bg-accent transition-colors cursor-pointer ${
+                  currentPage === 'posts' ? 'bg-accent' : ''
+                }`}
+                onClick={() => onPageChange?.('posts')}
+              >
+                <FileText className="h-4 w-4" />
+                <span className="text-sm">Posts</span>
+              </div>
+              <div 
+                className={`flex items-center space-x-2 p-2 rounded-lg hover:bg-accent transition-colors cursor-pointer ${
+                  currentPage === 'about' ? 'bg-accent' : ''
+                }`}
+                onClick={() => onPageChange?.('about')}
+              >
+                <Shield className="h-4 w-4" />
+                <span className="text-sm">About</span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
       {/* Profile Card */}
       <Card>
         <CardHeader className="text-center">
           <Avatar className="w-20 h-20 mx-auto mb-4">
             <AvatarImage 
-              src="/yd1ng.svg" 
+              src={profileImgUrl}
               alt="yd1ng profile" 
               className="object-cover"
             />
@@ -103,22 +149,20 @@ export function Sidebar({ onCategoryClick, selectedCategory, posts = [], onTagCl
           </Avatar>
           <CardTitle className="font-mono">yd1ng</CardTitle>
           <p className="text-sm text-muted-foreground">
-            Security researcher passionate about finding vulnerabilities and building secure applications.
+            Aspiring security-focused developer with a goal to become a skilled developer who prioritizes security in every aspect of software development.
           </p>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-3 gap-4 text-center text-sm">
-            <div>
-              <div className="font-mono">45</div>
-              <div className="text-muted-foreground">Posts</div>
+          <div className="flex justify-center items-end text-center text-sm">
+            <div className="flex flex-col items-center">
+              <div className="font-mono text-base leading-none">{posts.length}</div>
+              <div className="mt-1 text-muted-foreground whitespace-nowrap leading-tight">Posts</div>
             </div>
-            <div>
-              <div className="font-mono">128</div>
-              <div className="text-muted-foreground">CVEs</div>
-            </div>
-            <div>
-              <div className="font-mono">1.2k</div>
-              <div className="text-muted-foreground">Stars</div>
+            {/* Fixed spacer to guarantee separation */}
+            <div className="w-6" aria-hidden="true" />
+            <div className="flex flex-col items-center">
+              <div className="font-mono text-base leading-none">0</div>
+              <div className="mt-1 text-muted-foreground whitespace-nowrap leading-tight">CVEs</div>
             </div>
           </div>
         </CardContent>
@@ -143,7 +187,7 @@ export function Sidebar({ onCategoryClick, selectedCategory, posts = [], onTagCl
                 <span className="text-sm">All Posts</span>
               </div>
               <Badge variant="secondary" className="text-xs">
-                {Object.values(postCounts).reduce((sum, count) => sum + count, 0)}
+                {posts?.length || 0}
               </Badge>
             </div>
             

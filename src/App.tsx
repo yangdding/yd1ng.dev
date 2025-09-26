@@ -1,17 +1,20 @@
 import React, { useState, useEffect } from "react";
 import { Header } from "./components/Header";
 import { Sidebar } from "./components/Sidebar";
+import { Footer } from "./components/Footer";
 import { BlogPost } from "./components/BlogPost";
 import { About } from "./components/About";
 import { AdminLogin } from "./components/AdminLogin";
 import { PostEditor } from "./components/PostEditor";
 import { PasswordReset } from "./components/PasswordReset";
 import { PostDetail } from "./components/PostDetail";
+import { NotFound } from "./components/NotFound";
 import { Button } from "./components/ui/button";
 import { Input } from "./components/ui/input";
 import { Search, Plus } from "lucide-react";
 import { supabase } from "./utils/supabase/client";
 import { postsAPI, authAPI } from "./utils/api";
+import { AuthManager, AuthRateLimit } from "./utils/auth";
 
 export default function App() {
   const [currentPage, setCurrentPage] = useState("posts");
@@ -41,7 +44,9 @@ export default function App() {
     // Default to system preference
     return window.matchMedia('(prefers-color-scheme: dark)').matches;
   });
-  const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(true);
+  const [authenticatedPosts, setAuthenticatedPosts] = useState<Set<string>>(new Set());
+  const [showNotFound, setShowNotFound] = useState<boolean>(false);
 
   // No default posts - use empty array
   const defaultPosts: any[] = [];
@@ -170,9 +175,10 @@ export default function App() {
         setCurrentPage('posts');
         break;
       default:
-        // Unknown route, redirect to posts
-        setCurrentPage('posts');
-        window.history.replaceState({}, '', '/posts');
+        // For unknown routes, show 404 page
+        console.log('Unknown route:', path);
+        setShowNotFound(true);
+        setCurrentPage('notfound');
         break;
     }
   };
@@ -206,19 +212,14 @@ export default function App() {
 
   const checkAuthStatus = async () => {
     try {
-      // Check localStorage for admin status
-      const isAdminStored = localStorage.getItem('isAdmin');
-      const adminEmail = localStorage.getItem('adminEmail');
-      
-      if (isAdminStored === 'true' && adminEmail === 'admin@yd1ng.dev') {
-          setIsAdmin(true);
-        setAccessToken("admin_token");
-      } else {
-        setIsAdmin(false);
-        setAccessToken("");
-      }
+      // Use new auth manager
+      const isAdmin = AuthManager.isAdmin();
+      setIsAdmin(isAdmin);
+      setAccessToken(isAdmin ? "admin_token" : "");
     } catch (error) {
       console.log('Auth check error:', error);
+      setIsAdmin(false);
+      setAccessToken("");
     }
   };
 
@@ -286,39 +287,38 @@ export default function App() {
 
   const handleLogin = async (email: string, password: string) => {
     try {
-      // Simple hardcoded admin login
-      const ADMIN_USERNAME = "yd1ng";
-      const ADMIN_PASSWORD = "yangiy54@";
+      // Check rate limiting
+      if (AuthRateLimit.isBlocked(email)) {
+        const remainingTime = Math.ceil(AuthRateLimit.getRemainingTime(email) / 60000);
+        throw new Error(`Too many failed attempts. Please try again in ${remainingTime} minutes.`);
+      }
+
+      // Attempt login with new auth manager
+      const result = await AuthManager.loginAdmin(email, password);
       
-      if (email === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
-          setIsAdmin(true);
+      if (result.success) {
+        AuthRateLimit.recordAttempt(email, true);
+        setIsAdmin(true);
         setAccessToken("admin_token");
         setShowLogin(false);
         loadPosts(); // Reload posts for admin
-        
-        // Store admin status in localStorage
-        localStorage.setItem('isAdmin', 'true');
-        localStorage.setItem('adminEmail', email);
-        
-          return true;
+        return true;
+      } else {
+        AuthRateLimit.recordAttempt(email, false);
+        throw new Error(result.error || 'Login failed');
       }
-      
-      return false;
     } catch (error) {
       console.error('Login error:', error);
-      return false;
+      throw error;
     }
   };
 
   const handleLogout = async () => {
     try {
+      // Use new auth manager for logout
+      AuthManager.logout();
       setIsAdmin(false);
       setAccessToken("");
-      
-      // Clear admin status from localStorage
-      localStorage.removeItem('isAdmin');
-      localStorage.removeItem('adminEmail');
-      
       loadPosts(); // Reload posts for public view
     } catch (error) {
       console.error('Logout error:', error);
@@ -386,6 +386,10 @@ export default function App() {
     setShowPostDetail(true);
   };
 
+  const handlePostAuthenticated = (postId: string) => {
+    setAuthenticatedPosts(prev => new Set(prev).add(postId));
+  };
+
   const handlePasswordReset = async (newPassword: string) => {
     try {
       await authAPI.resetPassword(newPassword);
@@ -403,10 +407,27 @@ export default function App() {
       return (
         <PostDetail
           {...selectedPost}
+          isAuthenticated={authenticatedPosts.has(selectedPost.id) || isAdmin}
           onClose={() => {
             setShowPostDetail(false);
             setSelectedPost(null);
             navigateToPage('posts');
+          }}
+        />
+      );
+    }
+
+    // Show 404 page if not found
+    if (showNotFound) {
+      return (
+        <NotFound
+          onGoHome={() => {
+            setShowNotFound(false);
+            navigateToPage('posts');
+          }}
+          onGoBack={() => {
+            setShowNotFound(false);
+            window.history.back();
           }}
         />
       );
@@ -462,20 +483,16 @@ export default function App() {
                   onEdit={() => handleEditPost(post)}
                   onDelete={() => handleDeletePost(post.id)}
                   onRead={() => handleReadPost(post)}
+                  onAuthenticated={handlePostAuthenticated}
                 />
               ))}
               
               {filteredPosts.length === 0 && (
                 <div className="text-center py-12">
                   <h3 className="text-lg font-semibold mb-2">No posts found</h3>
-                  <p className="text-muted-foreground mb-4">
+                  <p className="text-muted-foreground">
                     {searchTerm ? "Try adjusting your search terms" : "No posts available"}
                   </p>
-                  {isAdmin && !searchTerm && (
-                    <Button onClick={handleNewPost}>
-                      Create your first post
-              </Button>
-                  )}
                 </div>
               )}
             </div>
@@ -495,8 +512,6 @@ export default function App() {
         onPasswordReset={() => setShowPasswordReset(true)}
         isDarkMode={isDarkMode}
         onToggleDarkMode={toggleDarkMode}
-        onCategoryClick={handleCategoryFilter}
-        selectedCategory={selectedCategory}
         onToggleSidebar={toggleSidebar}
         isSidebarOpen={isSidebarOpen}
       />
@@ -515,6 +530,8 @@ export default function App() {
                   selectedCategory={selectedCategory}
                   posts={blogPosts}
                   onTagClick={handleTagClick}
+                  onPageChange={navigateToPage}
+                  currentPage={currentPage}
                 />
               </div>
             </div>
@@ -544,6 +561,13 @@ export default function App() {
           onClose={() => setShowPasswordReset(false)}
         />
       )}
+      
+        <Footer 
+          isAdmin={isAdmin}
+          onLoginClick={() => setShowLogin(true)}
+          onLogout={handleLogout}
+          onPasswordReset={() => setShowPasswordReset(true)}
+        />
     </div>
   );
 }

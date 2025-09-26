@@ -187,3 +187,10 @@
 html {
   font-size: var(--font-size);
 }
+
+/* Desktop zoom to 80% (mobile unaffected) */
+@media (min-width: 1024px) {
+  body {
+    zoom: 0.8;
+  }
+}

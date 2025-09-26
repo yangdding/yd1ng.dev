@@ -1,10 +1,11 @@
 import React, { useState } from "react";
-import { Calendar, Share2, ArrowLeft, Link, Check } from "lucide-react";
+import { Calendar, Share2, ArrowLeft, Check } from "lucide-react";
 import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { useEffect } from 'react';
+import { sanitizeHtml, createSafeMarkdownHtml } from "../utils/xss-protection";
 
 interface PostDetailProps {
   id?: string;
@@ -16,6 +17,7 @@ interface PostDetailProps {
   tags: string[];
   featured?: boolean;
   password?: string;
+  isAuthenticated?: boolean;
   onClose: () => void;
 }
 
@@ -29,15 +31,20 @@ export function PostDetail({
   tags, 
   featured = false,
   password,
+  isAuthenticated: initialAuthenticated = false,
   onClose 
 }: PostDetailProps) {
   const [linkCopied, setLinkCopied] = useState(false);
   const [isSharing, setIsSharing] = useState(false);
   const [shareSuccess, setShareSuccess] = useState(false);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(initialAuthenticated);
   const [passwordInput, setPasswordInput] = useState("");
   const [passwordError, setPasswordError] = useState("");
   
+  // Update authentication state when prop changes
+  useEffect(() => {
+    setIsAuthenticated(initialAuthenticated);
+  }, [initialAuthenticated]);
 
   const formatDisplayDate = (dateValue?: string) => {
     if (!dateValue) return '';
@@ -184,6 +191,10 @@ export function PostDetail({
       );
     }
 
+    return renderMarkdownContent();
+  };
+
+  const renderMarkdownContent = () => {
     return (
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
@@ -397,15 +408,6 @@ export function PostDetail({
                   </>
                 )}
               </Button>
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={handleCopyLink}
-                className="flex items-center space-x-1 text-xs sm:text-sm"
-              >
-                {linkCopied ? <Check className="h-3 w-3 sm:h-4 sm:w-4" /> : <Link className="h-3 w-3 sm:h-4 sm:w-4" />}
-                <span>{linkCopied ? "✓" : "Link"}</span>
-              </Button>
             </div>
           </div>
         </div>
@@ -416,7 +418,7 @@ export function PostDetail({
         {/* Post Header */}
         <div className="space-y-6 mb-12 text-center">
           <div className="space-y-6">
-            <h1 className="font-black leading-tight text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl">{title}</h1>
+            <h1 className="font-black leading-tight text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl" dangerouslySetInnerHTML={{ __html: sanitizeHtml(title) }}></h1>
             <div className="flex items-center justify-center space-x-2 sm:space-x-4 text-xs sm:text-sm text-muted-foreground">
               <div className="flex items-center space-x-1">
                 <span>{formatDisplayDate(published_at || date)}</span>
@@ -447,7 +449,7 @@ export function PostDetail({
         {/* Article Content */}
         <article className="prose prose-gray dark:prose-invert max-w-none">
           <div className="space-y-8">
-            {renderMarkdown(content || '')}
+            {renderMarkdownContent()}
           </div>
         </article>
       </div>
