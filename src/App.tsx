@@ -20,6 +20,8 @@ export default function App() {
   const [currentPage, setCurrentPage] = useState("posts");
 
   const navigateToPage = (page: string) => {
+    // Clear 404 state when navigating via UI
+    setShowNotFound(false);
     setCurrentPage(page);
     const url = page === 'posts' ? '/' : `/${page}`;
     window.history.pushState({}, '', url);
@@ -156,6 +158,7 @@ export default function App() {
     // Check if URL is a post URL pattern: /post/{id}
     const postMatch = path.match(/^\/post\/([a-f0-9-]+)$/);
     if (postMatch) {
+      setShowNotFound(false);
       const postId = postMatch[1];
       // Find post by ID and show PostDetail
       loadPostById(postId);
@@ -165,13 +168,16 @@ export default function App() {
     // Handle page routing
     switch (path) {
       case '/about':
+        setShowNotFound(false);
         setCurrentPage('about');
         break;
       case '/editor':
+        setShowNotFound(false);
         setCurrentPage('editor');
         break;
       case '/posts':
       case '/':
+        setShowNotFound(false);
         setCurrentPage('posts');
         break;
       default:
